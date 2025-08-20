@@ -12,3 +12,8 @@ infra/data/
 
 # Others
 .env
+
+
+# Ignore DB + runtime data
+infra/data/*
+!infra/data/.gitkeep

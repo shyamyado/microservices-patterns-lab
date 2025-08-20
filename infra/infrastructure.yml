@@ -1,32 +1,18 @@
+
 networks:
   backend:
     driver: bridge
 
+volumes:
+  postgres_customer_data:
+  postgres_order_data:
+  postgres_payment_data:
+  postgres_inventory_data:
+
 services:
-  postgres:
-    image: postgres:15
-    container_name: postgres
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: demo
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    networks:
-      - backend
-    profiles: ["postgres"]
-
-  redis:
-    image: redis:7
-    container_name: redis
-    ports:
-      - "6379:6379"
-    networks:
-      - backend
-    profiles: ["redis"]
-
+  # ===============================
+  # RabbitMQ (shared for all)
+  # ===============================
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -37,14 +23,153 @@ services:
       - backend
     profiles: ["rabbitmq"]
 
-  nginx:
-    image: nginx:latest
+  # ===============================
+  # API Gateway (NGINX)
+  # ===============================
+  gateway:
+    image: nginx:alpine
     container_name: nginx
+    volumes:
+      - ./gateway/conf.d:/etc/nginx/conf.d
     ports:
       - "80:80"
-    volumes:
-      # Mount the whole gateway folder so Nginx sees all .conf files inside conf.d
-      - ./gateway:/etc/nginx/conf.d:ro
+    depends_on:
+      - customer_service
+      - order_service
+      - payment_service
+      - inventory_service
     networks:
       - backend
     profiles: ["gateway"]
+
+  # ===============================
+  # Customer Service + DB
+  # ===============================
+  postgres_customer:
+    image: postgres:15
+    container_name: postgres_customer
+    environment:
+      POSTGRES_USER: customer_user
+      POSTGRES_PASSWORD: customer_pass
+      POSTGRES_DB: customer_db
+    volumes:
+      - ./data/postgres_customer:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - backend
+    profiles: ["customer_service"]
+
+  customer_service:
+    build:
+      context: ../services/customer_service
+    container_name: customer-service
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres_customer
+    environment:
+      DATABASE_URL: postgres://customer_user:customer_pass@postgres_customer:5432/customer_db
+    networks:
+      - backend
+    profiles: ["customer_service"]
+
+  # ===============================
+  # Order Service + DB
+  # ===============================
+  postgres_order:
+    image: postgres:15
+    container_name: postgres_order
+    environment:
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: order_pass
+      POSTGRES_DB: order_db
+    volumes:
+      - ./data/postgres_order:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - backend
+    profiles: ["order_service"]
+
+  order_service:
+    build:
+      context: ../services/order_service
+    container_name: order-service
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+    ports:
+      - "8002:8002"
+    depends_on:
+      - postgres_order
+    environment:
+      DATABASE_URL: postgres://order_user:order_pass@postgres_order:5432/order_db
+    networks:
+      - backend
+    profiles: ["order_service"]
+
+  # ===============================
+  # Payment Service + DB
+  # ===============================
+  postgres_payment:
+    image: postgres:15
+    container_name: postgres_payment
+    environment:
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass
+      POSTGRES_DB: payment_db
+    volumes:
+      - ./data/postgres_payment:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks:
+      - backend
+    profiles: ["payment_service"]
+
+  payment_service:
+    build:
+      context: ../services/payment_service
+    container_name: payment-service
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8003 --reload
+    ports:
+      - "8003:8003"
+    depends_on:
+      - postgres_payment
+    environment:
+      DATABASE_URL: postgres://payment_user:payment_pass@postgres_payment:5432/payment_db
+    networks:
+      - backend
+    profiles: ["payment_service"]
+
+  # ===============================
+  # Inventory Service + DB
+  # ===============================
+  postgres_inventory:
+    image: postgres:15
+    container_name: postgres_inventory
+    environment:
+      POSTGRES_USER: inventory_user
+      POSTGRES_PASSWORD: inventory_pass
+      POSTGRES_DB: inventory_db
+    volumes:
+      - ./data/postgres_inventory:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    networks:
+      - backend
+    profiles: ["inventory_service"]
+
+  inventory_service:
+    build:
+      context: ../services/inventory_service
+    container_name: inventory-service
+    command: uv run uvicorn main:app --host 0.0.0.0 --port 8004 --reload
+    ports:
+      - "8004:8004"
+    depends_on:
+      - postgres_inventory
+    environment:
+      DATABASE_URL: postgres://inventory_user:inventory_pass@postgres_inventory:5432/inventory_db
+    networks:
+      - backend
+    profiles: ["inventory_service"]

@@ -27,7 +27,22 @@ up:
 # Stop all services by setting COMPOSE_PROFILES
 down:
 	@echo "Stopping all services..."
-	COMPOSE_PROFILES=postgres,redis,rabbitmq,gateway docker compose -f infrastructure.yml down -v
+	@if [ -z "$(ENABLED_PROFILES)" ]; then \
+		echo "No services enabled in .env, stopping all profiles manually..."; \
+		docker compose -f infrastructure.yml \
+			--profile rabbitmq \
+			--profile gateway \
+			--profile customer_service \
+			--profile order_service \
+			--profile payment_service \
+			--profile inventory_service \
+			down -v --remove-orphans; \
+	else \
+		for profile in $(ENABLED_PROFILES); do \
+			echo "Stopping $$profile..."; \
+			docker compose -f infrastructure.yml --profile $$profile down -v --remove-orphans; \
+		done \
+	fi
 	@echo "All services stopped."
 
 

@@ -1,5 +1,5 @@
 
-# 🛠 Microservices Patterns Lab
+# Microservices Patterns Lab
 
 A **practice environment** for learning microservices patterns using **Python + uv + Docker**.
 
@@ -17,27 +17,22 @@ A **practice environment** for learning microservices patterns using **Python + 
 
 ## Project Structure
 
+High-level folder structure:
 ```
 microservices-patterns-lab/
-├── README.md
-├── .gitignore
-├── infra/
-│   ├── .env                   # Enable/disable services
-│   ├── infrastructure.yml     # Docker Compose
-│   ├── Makefile               # Commands to start/stop services
-│   └── docs/                  # Infra documentation
-├── gateway/
-│   └── nginx.conf             # NGINX API Gateway config
-├── services/                  # Microservices (to be added later)
-├── patterns/                  # Pattern practice folders (empty for now)
-└── scripts/                   # Utility scripts
+├── infra/         # Docker Compose, .env, Makefile
+├── gateway/       # NGINX API Gateway
+├── services/      # Microservices (FastAPI + uv; to be added)
+├── patterns/      # Microservices patterns practice examples
+└── scripts/       # Utility scripts (DB init, seed, cleanup)
+
 ```
 
 ---
 
 ## Infrastructure Setup
 
-### 1️⃣ Configure Services
+### Configure Services
 
 Edit `infra/.env` to enable/disable services:
 
