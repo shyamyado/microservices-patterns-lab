@@ -20,6 +20,8 @@ Installs `fastapi`, `uvicorn`, `pika`, `psycopg2-binary` from `pyproject.toml`.
 ### 3. Run the Service
 ```bash
 uv run uvicorn main:app --host 0.0.0.0 --port 8002 --reload
+# Or
+uvicorn main:app --host 0.0.0.0 --port 8002 --reload
 ```
 - API at `http://localhost:8002`
 - `--reload` for development
